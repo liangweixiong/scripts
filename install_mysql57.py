@@ -110,7 +110,26 @@ def extract(mysql_install_file):  # /usr/local/src/mysql-5.7.21-linux-glibc2.12-
         raise SystemExit('%s does not exists' % mysql_install_file)
     os.chdir(os.path.dirname(mysql_install_file))  # /usr/local/src/
     with tarfile.open(mysql_install_file, 'r:gz') as t:
-        t.extractall(".")  # 解压到当前目录/usr/local/src/
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(t, ".")
 
 
 # 拷贝安装包文件到程序目录
